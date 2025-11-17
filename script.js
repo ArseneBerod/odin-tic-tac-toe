@@ -182,10 +182,10 @@ const Renderer = ((container) => {
 				cell.setAttribute("row", row);
 				cell.setAttribute("col", col);
 				if (board.getCell(row, col) === 1) {
-					cell.textContent = "X";
+					cell.style = `background: no-repeat center/cover url("./assets/images/cross.svg")`
 				}
 				if (board.getCell(row, col) === -1) {
-					cell.textContent = "O";
+					cell.style = `background: no-repeat center/cover url("./assets/images/circle.svg")`
 				}
 				container.appendChild(cell)
 			}
