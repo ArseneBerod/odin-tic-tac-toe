@@ -3,17 +3,18 @@ const GameStatus = Object.freeze({
 	P2_WIN: "P2_WIN",
 	DRAW: "DRAW",
 	IN_PROGRESS: "IN_PROGRESS",
+	NOT_STARTED: "NOT_STARTED"
 });
 
 function createPlayer(name, marker) {
 	return { name, marker };
 }
 
-const Game = ((name1, name2) => {
-	const player1 = createPlayer(name1, 1);
-	const player2 = createPlayer(name2, -1);
+const Game = (() => {
+	let player1;
+	let player2;
+	let gameStatus = GameStatus.NOT_STARTED;
 	let player1Round = true;
-	let gameStatus = GameStatus.IN_PROGRESS;
 	const checkRows = (board) => {
 		const { nbRows, nbCols } = board.getSize();
 		let result = 0;
@@ -98,8 +99,16 @@ const Game = ((name1, name2) => {
 		}
 
 	}
-	const getStatus = () => {
-		return gameStatus;
+	const getPlayer1 = () => player1;
+	const getPlayer2 = () => player2;
+	const getStatus = () => gameStatus;
+	const setStatus = status => gameStatus = status;
+
+
+	const start = (p1Name, p2Name) => {
+		player1 = createPlayer(p1Name === ""? "Player 1" : p1Name, 1);
+		player2 = createPlayer(p2Name === ""? "Player 2" : p2Name, -1);
+		gameStatus = GameStatus.IN_PROGRESS;
 	}
 	const play = (board, row, col) => {
 		if (gameStatus !== GameStatus.IN_PROGRESS) return;
@@ -116,11 +125,11 @@ const Game = ((name1, name2) => {
 	}
 	const reset = (board) => {
 		player1Round = true;
-		gameStatus = GameStatus.IN_PROGRESS;
+		gameStatus = GameStatus.NOT_STARTED;
 		board.reset();
 	}
-	return { play, reset, getStatus };
-})("p1", "p2");
+	return { start, play, reset, getStatus, setStatus, getPlayer1, getPlayer2};
+})();
 
 const Board = (() => {
 	const nbCols = 3;
@@ -182,11 +191,12 @@ const Renderer = ((container) => {
 			}
 		}
 	}
-	const showResult = (status) => {
+	const showResult = (game) => {
 		const resultDiv = document.querySelector(".result");
-		if (status === GameStatus.P1_WIN) resultDiv.textContent = "Player 1 Wins!";
-		else if (status === GameStatus.P2_WIN) resultDiv.textContent = "Player 2 Wins!";
-		else resultDiv.textContent = "It's a draw!";
+		const gameStatus = game.getStatus()
+		if (gameStatus === GameStatus.P1_WIN) resultDiv.textContent = `${game.getPlayer1().name} wins!`;
+		else if (gameStatus === GameStatus.P2_WIN) resultDiv.textContent = `${game.getPlayer2().name} wins!`;
+		else if (gameStatus === GameStatus.DRAW) resultDiv.textContent = "It's a draw!";
 	}
 	const clearResult = () => {
 		const resultDiv = document.querySelector(".result");
@@ -198,15 +208,15 @@ const Renderer = ((container) => {
 	return { update, showResult, clearResult, setOnClick }
 })(container);
 
+const player1 = document.querySelector("input[name=player1]");
+const player2 = document.querySelector("input[name=player2]");
 const BoardController = ((board, renderer, game) => {
 	renderer.update(board);
 	renderer.setOnClick((row, col) => {
+		if (game.getStatus() === GameStatus.NOT_STARTED) game.start(player1.value, player2.value);
 		game.play(board, row, col);
 		renderer.update(board);
-		const gameStatus = game.getStatus();
-		if (gameStatus !== GameStatus.IN_PROGRESS) {
-			renderer.showResult(gameStatus)
-		}
+		renderer.showResult(game);
 	})
 
 })(Board, Renderer, Game);
